@@ -31,7 +31,7 @@ public class MatchResult {
         this.match = match;
     }
 
-    public void displayResults() {
+    public void printResults() {
         if (capture != null) {
             for (Map.Entry<String, String> entry : capture.entrySet()) {
                 System.out.println(entry.getKey() + " = " + entry.getValue());
