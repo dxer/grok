@@ -45,23 +45,40 @@ public class Grok {
                 isNewExpressStart = true;
             }
 
-
-            if (isNewExpressStart && PATTERN_STOP.equals(expression.charAt(i) + "")) {
-                String express = tmpExpression.toString();
+            String express = tmpExpression.toString();
+            if (isNewExpressStart && express.startsWith(PATTERN_START) && express.endsWith(PATTERN_STOP)) {
                 express = express.replace(PATTERN_START, EMPTY);
                 express = express.replace(PATTERN_STOP, EMPTY);
 
-                String[] strs = express.split(PATTERN_DELIMITER);
-                if (strs != null && strs.length == 2) {
-                    String patternRegx = GrokDic.getPatterns().get(strs[0].trim());
-                    if (!Strings.isNullOrEmpty(patternRegx)) {
-                        String field = strs[1].trim();
-                        regex.append("(?<").append(field).append(">").append(patternRegx).append(")");
-                        fields.add(field);
-                        tmpExpression.setLength(0);
-                        isNewExpressStart = false;
+                if (express.contains(PATTERN_DELIMITER)) {
+                    String[] strs = express.split(PATTERN_DELIMITER);
+                    if (strs != null && strs.length == 2) {
+                        String patternRegx = GrokDic.getPatterns().get(strs[0].trim());
+                        if (!Strings.isNullOrEmpty(patternRegx)) {
+                            patternRegx = compileExpression(patternRegx);
+                            String field = strs[1].trim();
+                            regex.append("(?<").append(field).append(">").append(patternRegx).append(")");
+                            fields.add(field);
+                            isNewExpressStart = false;
+                        } else if (patternRegx != null) {
+                            String patternRegxNew = GrokDic.getPatterns().get(patternRegx);
+                            if (!Strings.isNullOrEmpty(patternRegxNew)) {
+                                regex.append(patternRegxNew);
+                            } else {
+                                regex.append(patternRegx.trim());
+                            }
+                        }
+                    }
+                } else {
+                    String patternRegxNew = GrokDic.getPatterns().get(express.trim());
+                    if (patternRegxNew.contains(PATTERN_START) && patternRegxNew.contains(PATTERN_STOP)) {
+                        regex.append(compileExpression(patternRegxNew));
+                    } else {
+                        regex.append(patternRegxNew);
                     }
                 }
+
+                tmpExpression.setLength(0);
             }
         }
 
@@ -74,6 +91,7 @@ public class Grok {
 
     public Pattern compile(String expression) {
         String regex = compileExpression(expression);
+        System.out.println(regex);
         pattern = Pattern.compile(regex);
         return pattern;
     }
